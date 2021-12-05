@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1 class="title">لیست محصولات</h1>
+    <table>
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>شماره</th>
+        <th>عنوان</th>
+        <th>دسته‌بندی</th>
+        <th>سایز</th>
+        <th>رنگ</th>
+        <th>قیمت (ریال)</th>
+        <th>تصویر</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for product in products %}
+    <tr>
+        <td class="text-center">{{ loop.index }}</td>
+        <td class="text-center">{{ product['id'] | int }}</td>
+        <td title="{{ product['title'] }}">{{ product['title'] }}</td>
+        <td title="{{ product['category'] }}">{{ product['category'] }}</td>
+        <td title="{{ product['sizes'] }}">{{ product['sizes'] }}</td>
+        <td title="{{ product['colors'] }}">{{ product['colors'] }}</td>
+        <td class="text-left">{{ product['pure_price'] }}</td>
+        <td class="text-center">
+            <a href="{{ product['image_urls'] }}" target="_blank">نمایش</a>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+{% endblock %}

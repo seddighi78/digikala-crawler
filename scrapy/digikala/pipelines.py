@@ -1,11 +1,9 @@
 import sqlite3
-import json
 
 
 class SqlitePipeline:
-
     def __init__(self, name):
-        self.connection = sqlite3.connect(name)
+        self.connection = sqlite3.connect('../' + name)
         self.cursor = self.connection.cursor()
         self.create_products_table()
 
@@ -38,8 +36,8 @@ class SqlitePipeline:
             item['id'],
             item['title'],
             item['category'],
-            json.dumps(item['sizes']),
-            json.dumps(item['colors']),
+            ','.join(item['sizes']),
+            ','.join(item['colors']),
             item['pure_price'],
             item['image_urls'][0],
         ))

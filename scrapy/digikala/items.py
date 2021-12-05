@@ -9,3 +9,4 @@ class DigikalaProduct(scrapy.Item):
     colors = scrapy.Field()
     pure_price = scrapy.Field()
     image_urls = scrapy.Field()
+    images = scrapy.Field()
