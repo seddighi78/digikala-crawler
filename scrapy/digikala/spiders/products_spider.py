@@ -1,5 +1,4 @@
 import scrapy
-import re
 import json
 from unidecode import unidecode
 from digikala.items import DigikalaProduct
