@@ -1,38 +1,42 @@
 import scrapy
 import re
+import json
 from unidecode import unidecode
 from digikala.items import DigikalaProduct
 
 
 class ApparelSpider(scrapy.Spider):
     name = "apparel"
-    base_url: str = "https://www.digikala.com"
+    base_url: str = "https://api.digikala.com/v1"
     page: int = 1
     all_pages: int = 1
+    max_page: int = 20
 
     def start_requests(self):
         yield scrapy.Request(url=self.generate_page_url(), callback=self.parse)
 
     def parse(self, response, **kwargs):
         self.parse_all_pages_count(response)
+
         yield from self.parse_products_list(response)
 
     def parse_products_list(self, response):
         self.page += 1
 
-        for product in response.css('ul.c-listing__items > li'):
-            url = product.css('a.js-product-url::attr(href)').extract_first(),
+        for product in json.loads(response.body)['data']['products']:
+            url = self.generate_product_url(product['id'])
+
             if url is not None:
-                url = self.base_url + url[0]
                 yield scrapy.Request(url, callback=self.parse_product)
 
-        if self.page <= self.all_pages:
+        if self.page <= self.all_pages and self.page <= self.max_page:
             yield from self.request_next_page()
 
     def parse_all_pages_count(self, response):
-        total = response.css('a.c-pager__next::attr(data-page)').extract_first(),
-        if total is not None:
-            self.all_pages = int(total[0])
+        total = decoded = json.loads(response.body)['data']['pager']['total_pages']
+        
+        if total is not None :
+            self.all_pages = int(total)
         else:
             self.all_pages = 1
 
@@ -40,16 +44,38 @@ class ApparelSpider(scrapy.Spider):
         yield scrapy.Request(url=self.generate_page_url(), callback=self.parse_products_list)
 
     def parse_product(self, response):
+        decoded = json.loads(response.body)['data']['product']
+        
         product = DigikalaProduct()
-        product['id'] = (re.search(self.id_pattern(), response.url)).group(2)
-        product['title'] = response.css('h1.c-product__title::text').get().strip()
-        product['category'] = response.css('div.c-product__nav-container nav.js-breadcrumb a span::text')[-1].get()
-        product['colors'] = response.css('li.c-circle-variant__item span.c-tooltip--short::text').getall()
-        product['sizes'] = [self.persian_to_english_number(size.strip()) for size in response.css('select.c-product__size-dropdown option::text').getall()]
-        product['pure_price'] = self.persian_to_english_number(response.css('div.c-product__seller-price-pure::text').get().strip())
-        product['image_urls'] = [response.css('img.js-gallery-img::attr(data-src)').get()]
-
+        product['id'] = decoded['id']
+        product['title'] = decoded['title_fa']
+        product['category'] = decoded['category']['title_fa']
+        product['image_urls'] = [decoded['images']['main']['url'][0]]
+        product['sizes'] = self.extract_sizes_from_product(decoded)
+        product['colors'] = self.extract_colors_from_product(decoded)
+        product['pure_price'] = product['pure_price'] = decoded['default_variant']['price']['selling_price']
+        
         yield product
+
+    def extract_sizes_from_product(self, response):
+        if 'varians' not in response:
+            return []
+
+        sizes = []
+        for size in response['variants']:
+            sizes.append(size['title'])
+
+        return sizes
+    
+    def extract_colors_from_product(self, response):
+        if 'colors' not in response:
+            return []
+
+        colors = []
+        for color in response['colors']:
+            colors.append(color['title'])
+
+        return colors
 
     def id_pattern(self):
         return '(.*)dkp-(.*)/(.*)'
@@ -58,4 +84,7 @@ class ApparelSpider(scrapy.Spider):
         return unidecode(text)
 
     def generate_page_url(self):
-        return self.base_url + '/search/apparel/?pageno=' + str(self.page)
+        return self.base_url + '/categories/apparel/search/?page=' + str(self.page)
+    
+    def generate_product_url(self, id):
+        return self.base_url + '/product/' + str(id) + '/'
