@@ -5,8 +5,9 @@ from unidecode import unidecode
 from digikala.items import DigikalaProduct
 
 
-class ApparelSpider(scrapy.Spider):
-    name = "apparel"
+class ProductsSpider(scrapy.Spider):
+    name = "products"
+    category = 'mobile-accessories'
     base_url: str = "https://api.digikala.com/v1"
     page: int = 1
     all_pages: int = 1
@@ -84,7 +85,7 @@ class ApparelSpider(scrapy.Spider):
         return unidecode(text)
 
     def generate_page_url(self):
-        return self.base_url + '/categories/apparel/search/?page=' + str(self.page)
+        return self.base_url + '/categories/' + self.category + '/search/?page=' + str(self.page)
     
     def generate_product_url(self, id):
         return self.base_url + '/product/' + str(id) + '/'
